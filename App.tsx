@@ -5,6 +5,7 @@ const { VolumeControl } = NativeModules;
 const { VolumeScheduler } = NativeModules;
 
 import BackgroundTimer from 'react-native-background-timer';
+import Home from './src/Home';
 
 
 export default function App() {
@@ -25,10 +26,10 @@ const scheduleVolumeMute = (timeInMilliseconds) => {
 
 
   return (
-    <View>
+    <View style={{flex:1}}>
 
 
-      <Button
+      {/* <Button
       title='d'
       onPress={()=>{
         VolumeScheduler.scheduleMute(16, 9, 100, null); // Set media volume to 100% at 10:00 PM on Mondays and Fridays
@@ -47,8 +48,8 @@ const scheduleVolumeMute = (timeInMilliseconds) => {
         // VolumeScheduler.toggleVibrationMode(false); // Disable vibration mode
 
       }}
-      />
-
+      /> */}
+<Home />
 
     </View>
   )

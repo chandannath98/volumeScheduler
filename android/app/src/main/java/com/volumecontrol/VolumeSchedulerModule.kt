@@ -5,8 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
-import android.os.VibrationEffect
-import android.os.Vibrator
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -37,6 +35,26 @@ class VolumeSchedulerModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun scheduleNotificationVolume(hour: Int, minute: Int, volumePercentage: Int, days: ReadableArray?) {
         scheduleVolumeAdjustment(hour, minute, AudioManager.STREAM_NOTIFICATION, volumePercentage, days)
+    }
+
+    @ReactMethod
+    fun cancelMute(hour: Int, minute: Int, days: ReadableArray?) {
+        cancelScheduledMute(hour, minute, AudioManager.STREAM_MUSIC, days)
+    }
+
+    @ReactMethod
+    fun cancelRingVolume(hour: Int, minute: Int, days: ReadableArray?) {
+        cancelScheduledMute(hour, minute, AudioManager.STREAM_RING, days)
+    }
+
+    @ReactMethod
+    fun cancelAlarmVolume(hour: Int, minute: Int, days: ReadableArray?) {
+        cancelScheduledMute(hour, minute, AudioManager.STREAM_ALARM, days)
+    }
+
+    @ReactMethod
+    fun cancelNotificationVolume(hour: Int, minute: Int, days: ReadableArray?) {
+        cancelScheduledMute(hour, minute, AudioManager.STREAM_NOTIFICATION, days)
     }
 
     @ReactMethod
@@ -124,6 +142,77 @@ class VolumeSchedulerModule(private val reactContext: ReactApplicationContext) :
                 )
 
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            }
+        }
+    }
+
+    private fun cancelScheduledMute(hour: Int, minute: Int, streamType: Int, days: ReadableArray?) {
+        val alarmManager = reactContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        if (days == null || days.size() == 0) {
+            // Cancel for the previously scheduled mute
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+
+                if (timeInMillis <= System.currentTimeMillis()) {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                }
+            }
+
+            val intent = Intent(reactContext, VolumeAdjustReceiver::class.java).apply {
+                putExtra("streamType", streamType)
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                reactContext,
+                streamType,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            alarmManager.cancel(pendingIntent)
+        } else {
+            for (i in 0 until days.size()) {
+                val day = days.getString(i)?.uppercase()
+
+                if (day == null) continue
+
+                val targetDay = when (day) {
+                    "SUNDAY" -> Calendar.SUNDAY
+                    "MONDAY" -> Calendar.MONDAY
+                    "TUESDAY" -> Calendar.TUESDAY
+                    "WEDNESDAY" -> Calendar.WEDNESDAY
+                    "THURSDAY" -> Calendar.THURSDAY
+                    "FRIDAY" -> Calendar.FRIDAY
+                    "SATURDAY" -> Calendar.SATURDAY
+                    else -> null
+                }
+
+                if (targetDay == null) continue
+
+                val calendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+
+                    val currentDay = get(Calendar.DAY_OF_WEEK)
+                    val daysUntilTarget = (targetDay - currentDay + 7) % 7
+                    add(Calendar.DAY_OF_YEAR, daysUntilTarget)
+                }
+
+                val intent = Intent(reactContext, VolumeAdjustReceiver::class.java).apply {
+                    putExtra("streamType", streamType)
+                    putExtra("day", day)
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    reactContext,
+                    day.hashCode() + streamType,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                alarmManager.cancel(pendingIntent)
             }
         }
     }

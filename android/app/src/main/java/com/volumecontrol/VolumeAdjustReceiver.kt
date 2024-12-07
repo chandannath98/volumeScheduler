@@ -8,15 +8,18 @@ import android.media.AudioManager
 class VolumeAdjustReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        val streamType = intent.getIntExtra("streamType", -1)
+        val volumePercentage = intent.getIntExtra("volumePercentage", -1)
+
+        if (streamType != -1 && volumePercentage != -1) {
+            adjustVolume(context, streamType, volumePercentage)
+        }
+    }
+
+    private fun adjustVolume(context: Context, streamType: Int, volumePercentage: Int) {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val streamType = intent.getIntExtra("streamType", AudioManager.STREAM_MUSIC)
-        val volumePercentage = intent.getIntExtra("volumePercentage", 0) // Default to 0%
-
-        // Convert percentage to device-specific volume level
         val maxVolume = audioManager.getStreamMaxVolume(streamType)
-        val volumeLevel = (maxVolume * (volumePercentage / 100.0)).toInt()
-
-        // Set the specified stream volume to the calculated level
-        audioManager.setStreamVolume(streamType, volumeLevel, AudioManager.FLAG_SHOW_UI)
+        val newVolume = (maxVolume * (volumePercentage / 100.0)).toInt()
+        audioManager.setStreamVolume(streamType, newVolume, 0)
     }
 }

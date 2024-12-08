@@ -13,6 +13,7 @@ const extractTimeDetails = (date:Date) => {
       hour: Number(hour12),
       minute: Number(formattedMinutes),
       ampm,
+      hour24:hours
     };
   };
   

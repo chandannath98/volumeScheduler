@@ -83,30 +83,65 @@ const getSavedList = async () => {
   } catch {}
 };
 
+async function fetchSchedules() {
+  try {
+    const schedules = await VolumeScheduler.getSchedules();
+    console.log('Scheduled Tasks:', schedules);
+
+    // Example of rendering the schedules
+    schedules.forEach(schedule => {
+      console.log(`ID: ${schedule.id}`);
+      console.log(`Time: ${schedule.hour}:${schedule.minute}`);
+      console.log('Volume Levels:', schedule.volumeLevels);
+      console.log(`Vibration Mode: ${schedule.vibrationMode}`);
+      console.log(`Days: ${schedule.days.join(', ')}`);
+    });
+  } catch (error) {
+    console.error('Error fetching schedules:', error);
+  }
+}
+
 useEffect(() => {
-  getSavedList();
+  fetchSchedules();
 }, []);
+
 
 
 
 const createSchedule = async ()=>{
   const hour =timeDetails?.ampm=="PM"?  timeDetails?.hour+12:timeDetails?.hour
 
-  VolumeScheduler.scheduleMute(hour, timeDetails?.minute, 0, null); // Set media volume to 100% at 10:00 PM on Mondays and Fridays
+  // VolumeScheduler.scheduleMute(hour, timeDetails?.minute, 0, null); // Set media volume to 100% at 10:00 PM on Mondays and Fridays
 
-        // Schedule ring volume
-        VolumeScheduler.scheduleRingVolume(hour, timeDetails?.minute, 0, null); // Set ring volume to 80% at 8:100 AM daily
+  //       // Schedule ring volume
+  //       VolumeScheduler.scheduleRingVolume(hour, timeDetails?.minute, 0, null); // Set ring volume to 80% at 8:100 AM daily
         
-        // Schedule alarm volume
-        VolumeScheduler.scheduleAlarmVolume(hour, timeDetails?.minute, 0, null); // Set alarm volume to 100% at 22:00 AM on Wednesdays
+  //       // Schedule alarm volume
+  //       VolumeScheduler.scheduleAlarmVolume(hour, timeDetails?.minute, 0, null); // Set alarm volume to 100% at 22:00 AM on Wednesdays
         
-        // Schedule notification volume
-        VolumeScheduler.scheduleNotificationVolume(hour, timeDetails?.minute, 0, null); // Set notification volume to 0% at 6:00 PM daily
+  //       // Schedule notification volume
+  //       VolumeScheduler.scheduleNotificationVolume(hour, timeDetails?.minute, 0, null); // Set notification volume to 0% at 6:00 PM daily
         
-        // Toggle vibration mode
-        VolumeScheduler.toggleVibrationMode(false); // Enable vibration mode
-        // VolumeScheduler.toggleVibrationMode(false); // Disable vibration mode
-          console.log("first")
+  //       // Toggle vibration mode
+  //       VolumeScheduler.toggleVibrationMode(false); // Enable vibration mode
+  //       // VolumeScheduler.toggleVibrationMode(false); // Disable vibration mode
+  //         console.log("first")
+
+  VolumeScheduler.scheduleAdjustment(
+    1, // Unique ID
+    timeDetails?.hour24, // Hour
+    timeDetails?.minute, // Minute
+    {
+      media: 0,
+      ring: 0,
+      alarm: 0,
+      notification: 0,
+    }, // Volume levels
+    true, // Enable vibration
+    ["SUNDAY"] // Days of the week
+  ).then(console.log).catch(console.error);
+
+
           bottomSheetRef?.current?.hide()
 }
 

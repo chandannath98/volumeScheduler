@@ -16,7 +16,7 @@ const Home = () => {
     },
     themesColors: {
       light: {
-        primary: '#6200EE',
+        primary: 'black',
         backgroundColor: '#FFFFFF',
         textColor: '#424242',
         // buttonColor: '#03DAC6',

@@ -12,11 +12,36 @@ class VolumeAdjustReceiver : BroadcastReceiver() {
         val volumeLevels = JSONObject(intent.getStringExtra("volumeLevels") ?: "{}")
         val vibrationMode = intent.getBooleanExtra("vibrationMode", false)
 
-        volumeLevels.optInt("media")?.let { audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, it, 0) }
-        volumeLevels.optInt("ring")?.let { audioManager.setStreamVolume(AudioManager.STREAM_RING, it, 0) }
-        volumeLevels.optInt("alarm")?.let { audioManager.setStreamVolume(AudioManager.STREAM_ALARM, it, 0) }
-        volumeLevels.optInt("notification")?.let { audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, it, 0) }
+        // Function to set volume based on percentage
+        fun setVolumePercentage(streamType: Int, percentage: Int) {
+            val maxVolume = audioManager.getStreamMaxVolume(streamType)
+            val volume = (maxVolume * (percentage / 100.0)).toInt()
+        
+            // Logging max volume and percentage
+            println("Stream Type: $streamType")
+            println("Max Volume: $maxVolume")
+            println("Percentage: $percentage")
+            println("Calculated Volume: $volume")
+        
+            audioManager.setStreamVolume(streamType, volume, 0)
+        }
+        
 
+        // Set volumes for each stream type if provided
+        volumeLevels.optInt("media", -1).takeIf { it in 0..100 }?.let {
+            setVolumePercentage(AudioManager.STREAM_MUSIC, it)
+        }
+        volumeLevels.optInt("ring", -1).takeIf { it in 0..100 }?.let {
+            setVolumePercentage(AudioManager.STREAM_RING, 2)
+        }
+        volumeLevels.optInt("alarm", -1).takeIf { it in 0..100 }?.let {
+            setVolumePercentage(AudioManager.STREAM_ALARM, it)
+        }
+        volumeLevels.optInt("notification", -1).takeIf { it in 0..100 }?.let {
+            setVolumePercentage(AudioManager.STREAM_NOTIFICATION, it)
+        }
+
+        // Set vibration mode if enabled
         if (vibrationMode) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
         }

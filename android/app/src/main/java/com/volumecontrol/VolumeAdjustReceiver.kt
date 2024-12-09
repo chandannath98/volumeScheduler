@@ -23,7 +23,7 @@ class VolumeAdjustReceiver : BroadcastReceiver() {
             println("Percentage: $percentage")
             println("Calculated Volume: $volume")
         
-            audioManager.setStreamVolume(streamType, volume, 0)
+            audioManager.setStreamVolume(streamType, volume, AudioManager.FLAG_ALLOW_RINGER_MODES)
         }
         
 
@@ -32,18 +32,18 @@ class VolumeAdjustReceiver : BroadcastReceiver() {
             setVolumePercentage(AudioManager.STREAM_MUSIC, it)
         }
         volumeLevels.optInt("ring", -1).takeIf { it in 0..100 }?.let {
-            setVolumePercentage(AudioManager.STREAM_RING, 2)
+            setVolumePercentage(AudioManager.STREAM_RING, it)
         }
         volumeLevels.optInt("alarm", -1).takeIf { it in 0..100 }?.let {
-            setVolumePercentage(AudioManager.STREAM_ALARM, it)
+            setVolumePercentage(AudioManager.   STREAM_ALARM, it)
         }
         volumeLevels.optInt("notification", -1).takeIf { it in 0..100 }?.let {
             setVolumePercentage(AudioManager.STREAM_NOTIFICATION, it)
         }
 
         // Set vibration mode if enabled
-        if (vibrationMode) {
-            audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
-        }
+        // if (vibrationMode) {
+        //     audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+        // }
     }
 }

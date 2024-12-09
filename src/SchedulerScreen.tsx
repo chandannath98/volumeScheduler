@@ -54,6 +54,9 @@ export default function SchedulerScreen() {
   const [alarmVolume, setAlarmVolume] = useState(0);
   const [scheduleList, setScheduleList] = useState([]);
 
+
+  const [selectedId, setSelectedId] = useState(null)
+
   const dayList = [
     'SUNDAY',
     'MONDAY',
@@ -80,7 +83,6 @@ export default function SchedulerScreen() {
       });
     } catch {}
   };
-  console.log(scheduleList)
 
   function generateRandomId() {
     return Math.floor(100 + Math.random() * 900);
@@ -108,37 +110,20 @@ export default function SchedulerScreen() {
     getSavedList();
   }, []);
 
-
+console.log(scheduleList)
   
-  const createSchedule = async () => {
-    const hour =
-      timeDetails?.ampm == 'PM' ? timeDetails?.hour + 12 : timeDetails?.hour;
-
-    // VolumeScheduler.scheduleMute(hour, timeDetails?.minute, 0, null); // Set media volume to 100% at 10:00 PM on Mondays and Fridays
-
-    //       // Schedule ring volume
-    //       VolumeScheduler.scheduleRingVolume(hour, timeDetails?.minute, 0, null); // Set ring volume to 80% at 8:100 AM daily
-
-    //       // Schedule alarm volume
-    //       VolumeScheduler.scheduleAlarmVolume(hour, timeDetails?.minute, 0, null); // Set alarm volume to 100% at 22:00 AM on Wednesdays
-
-    //       // Schedule notification volume
-    //       VolumeScheduler.scheduleNotificationVolume(hour, timeDetails?.minute, 0, null); // Set notification volume to 0% at 6:00 PM daily
-
-    //       // Toggle vibration mode
-    //       VolumeScheduler.toggleVibrationMode(false); // Enable vibration mode
-    //       // VolumeScheduler.toggleVibrationMode(false); // Disable vibration mode
-    //         console.log("first")
-
-    const id = generateRandomId();
+  const createSchedule = async (item?:any) => {
+    
+    console.log(item,"-------------------")
+    const id = item?.id || generateRandomId();
     const volumeObj = {
-      media: mediaVolume,
-      ring: ringVolume,
-      alarm: alarmVolume,
-      notification: ringVolume,
+      media:item?.volume?.media || mediaVolume,
+      ring: item?.volume?.ring || ringVolume,
+      alarm: item?.volume?.alarm || alarmVolume,
+      notification: item?.volume?.notification || ringVolume,
     };
 
-    const selectedDays = (repeat && days?.length > 0) ? days : null;
+    const selectedDays = item?.days || (repeat && days?.length > 0) ? days : null;
     VolumeScheduler.scheduleAdjustment(
       id, // Unique ID
       timeDetails?.hour24, // Hour
@@ -157,20 +142,106 @@ export default function SchedulerScreen() {
           volume: volumeObj,
           enable:true
         };
-        AsyncStorage.setItem(
-          'scheduleList',
-          JSON?.stringify([...scheduleList, scheduledItem]),
-        );
-        setScheduleList([...scheduleList, scheduledItem])
+        if(item){
+          const tempList=scheduleList?.map((k:any)=>{
+
+            if(k?.id==item?.id){
+              return{
+                ...k,
+                enable:true
+              }
+            }else{
+              return k
+            }
+          })
+          AsyncStorage.setItem(
+            'scheduleList',
+            JSON?.stringify([...tempList]),
+          );
+          setScheduleList([...tempList]) 
+        }else{
+          AsyncStorage.setItem(
+            'scheduleList',
+            JSON?.stringify([...scheduleList, scheduledItem]),
+          );
+          setScheduleList([...scheduleList, scheduledItem])
+        }
+        
       })
       .catch(console.error);
 
     bottomSheetRef?.current?.hide();
   };
 
+  const cancelSchedule = async (id:number)=>{
+
+    VolumeScheduler.cancelSchedule(id)?.then(async(i:any)=>{
+
+      const tempList =scheduleList?.map((j:any)=>{
+        if(j?.id==id){
+          return {
+            ...j,
+            enable:false
+          }
+        }
+
+        return j
+      })
+      
+    await  AsyncStorage.setItem(
+        'scheduleList',
+        JSON?.stringify([...tempList]),
+      ); 
+      setScheduleList([...tempList]);
+
+    
+    
+    })
+
+
+
+
+  }
+
+
+  const deleteSchedule = async(id:number)=>{
+    VolumeScheduler.cancelSchedule(id)?.then(async(i:any)=>{
+
+      const tempList =scheduleList?.filter((j:any)=>(j?.id==id))
+      
+    await  AsyncStorage.setItem(
+        'scheduleList',
+        JSON?.stringify([...tempList]),
+      ); 
+      setScheduleList([...tempList]);
+
+    bottomSheetRef?.current?.hide()
+    
+    })
+  }
+
+
+  const onItemPress =(item:any)=>{
+    setSelectedId(item?.id);
+    setAlarmVolume(item?.volume?.alarm)
+    setRingVolume(item?.volume?.ring)
+    setMediaVolume(item?.volume?.media)
+    setRepeat(!!item?.days)
+    setDays(item?.days)
+
+    settime(new Date(new Date((new Date())?.setHours(item?.hour))?.setMinutes(item?.minute)))
+    bottomSheetRef?.current?.show()
+  }
+
+
   return (
     <View style={styles.container}>
       <BottomSheet
+
+      onDismiss={()=>{
+        setDays([])
+        setSelectedId(null)
+      }}
         height={Dimensions.get('window').height * 0.9}
         ref={bottomSheetRef}>
         <View
@@ -332,12 +403,20 @@ export default function SchedulerScreen() {
             }}
           />
           <View style={{flexDirection: 'row', gap: scale(10)}}>
-            <Button title="Save" radius="xl" onPress={createSchedule} />
+            <Button title="Save" radius="xl" onPress={()=>createSchedule()} />
             <Button
               type="outline"
               title="Cancel"
               radius="xl"
               onPress={() => bottomSheetRef?.current?.hide()}
+            />
+            <Button
+              title="Delete"
+              color='red'
+              radius="xl"
+              onPress={() =>{
+                deleteSchedule(selectedId)
+              }}
             />
           </View>
         </View>
@@ -373,7 +452,7 @@ contentContainerStyle={{
 }}
   data={scheduleList}
   renderItem={({ item, index }: { item: any; index: number }) => (
-    <ScheduleItems item={item} index={index} />
+    <ScheduleItems createSchedule={createSchedule} onItemPress={onItemPress} cancelSchedule={cancelSchedule} item={item} index={index} />
   )}
 />
       </View>

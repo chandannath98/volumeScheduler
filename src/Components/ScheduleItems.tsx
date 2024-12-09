@@ -1,4 +1,4 @@
-import {StyleSheet, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, { useState } from 'react';
 import {moderateScale, verticalScale} from 'react-native-size-matters';
 import {Switch, Text} from 'react-native-lite-ui';
@@ -6,19 +6,29 @@ import {Switch, Text} from 'react-native-lite-ui';
 export default function ScheduleItems({
   item,
   index,
+  cancelSchedule,
+  onItemPress,
+  createSchedule
 }: {
   item: any;
   index: number;
+  cancelSchedule:(i:number)=>void
+  onItemPress:(i:number)=>void,
+  createSchedule:(i:number)=>void,
+
 }) {
 
-    const [enable, setEnable] = useState(item?.enable || true)
+    const [enable, setEnable] = useState(item?.enable)
 
   return (
-    <View style={styles?.itemContainer}>
+    <TouchableOpacity
+    
+    onPress={()=>onItemPress(item)}
+    style={styles?.itemContainer}>
         <View style={{gap:verticalScale(5)}}>
       <Text
         fontSize="extraLarge"
-        mode="medium">{`${item.hour}:${item?.minute} AM`}</Text>
+        mode="medium">{`${item.hour>12?item?.hour-12:item?.hour}:${item?.minute} ${item?.hour>11?"PM":"AM"}`}</Text>
 
 <Text>{item?.days? item?.days?.toString() :"Once"}</Text> 
         </View>
@@ -26,9 +36,18 @@ export default function ScheduleItems({
         <Switch
 
         isOn={enable}
-        onToggle={()=>setEnable(false)}
+        onToggle={()=>{
+          if(enable){
+
+            cancelSchedule(item?.id)
+          }else{
+            createSchedule(item)
+          }
+          
+          setEnable(!enable)
+        }}
         />
-    </View>
+    </TouchableOpacity>
   );
 }
 

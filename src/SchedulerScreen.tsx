@@ -54,8 +54,7 @@ export default function SchedulerScreen() {
   const [alarmVolume, setAlarmVolume] = useState(0);
   const [scheduleList, setScheduleList] = useState([]);
 
-
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState(null);
 
   const dayList = [
     'SUNDAY',
@@ -110,20 +109,20 @@ export default function SchedulerScreen() {
     getSavedList();
   }, []);
 
-console.log(scheduleList)
-  
-  const createSchedule = async (item?:any) => {
-    
-    console.log(item,"-------------------")
+  console.log(scheduleList);
+
+  const createSchedule = async (item?: any) => {
+    console.log(item, '-------------------');
     const id = item?.id || generateRandomId();
     const volumeObj = {
-      media:item?.volume?.media || mediaVolume,
+      media: item?.volume?.media || mediaVolume,
       ring: item?.volume?.ring || ringVolume,
       alarm: item?.volume?.alarm || alarmVolume,
       notification: item?.volume?.notification || ringVolume,
     };
 
-    const selectedDays = item?.days || (repeat && days?.length > 0) ? days : null;
+    const selectedDays =
+      item?.days || (repeat && days?.length > 0) ? days : null;
     VolumeScheduler.scheduleAdjustment(
       id, // Unique ID
       timeDetails?.hour24, // Hour
@@ -140,108 +139,143 @@ console.log(scheduleList)
           days: selectedDays,
           vibration: true,
           volume: volumeObj,
-          enable:true
+          enable: true,
         };
-        if(item){
-          const tempList=scheduleList?.map((k:any)=>{
-
-            if(k?.id==item?.id){
-              return{
+        if (item) {
+          const tempList = scheduleList?.map((k: any) => {
+            if (k?.id == item?.id) {
+              return {
                 ...k,
-                enable:true
-              }
-            }else{
-              return k
+                enable: true,
+              };
+            } else {
+              return k;
             }
-          })
-          AsyncStorage.setItem(
-            'scheduleList',
-            JSON?.stringify([...tempList]),
-          );
-          setScheduleList([...tempList]) 
-        }else{
+          });
+          AsyncStorage.setItem('scheduleList', JSON?.stringify([...tempList]));
+          setScheduleList([...tempList]);
+        } else {
           AsyncStorage.setItem(
             'scheduleList',
             JSON?.stringify([...scheduleList, scheduledItem]),
           );
-          setScheduleList([...scheduleList, scheduledItem])
+          setScheduleList([...scheduleList, scheduledItem]);
         }
-        
       })
       .catch(console.error);
 
     bottomSheetRef?.current?.hide();
   };
 
-  const cancelSchedule = async (id:number)=>{
+  const editSchedule = async (givenid?: any) => {
+    const id = givenid || generateRandomId();
+    const volumeObj = {
+      media: mediaVolume,
+      ring: ringVolume,
+      alarm: alarmVolume,
+      notification: ringVolume,
+    };
 
-    VolumeScheduler.cancelSchedule(id)?.then(async(i:any)=>{
+    const selectedDays = repeat && days?.length > 0 ? days : null;
+    VolumeScheduler.scheduleAdjustment(
+      id, // Unique ID
+      timeDetails?.hour24, // Hour
+      timeDetails?.minute, // Minute
+      volumeObj, // Volume levels
+      true, // Enable vibration
+      selectedDays, // Days of the week
+    )
+      .then(async () => {
+        const scheduledItem = {
+          id: id,
+          hour: timeDetails?.hour24,
+          minute: timeDetails?.minute,
+          days: selectedDays,
+          vibration: true,
+          volume: volumeObj,
+          enable: true,
+        };
+        if (givenid) {
+          const tempList = scheduleList?.map((k: any) => {
+            if (k?.id == givenid) {
+              return scheduledItem;
+            } else {
+              return k;
+            }
+          });
+          AsyncStorage.setItem('scheduleList', JSON?.stringify([...tempList]));
+          setScheduleList([...tempList]);
+        } else {
+          AsyncStorage.setItem(
+            'scheduleList',
+            JSON?.stringify([...scheduleList, scheduledItem]),
+          );
+          setScheduleList([...scheduleList, scheduledItem]);
+        }
+      })
+      .catch(console.error);
 
-      const tempList =scheduleList?.map((j:any)=>{
-        if(j?.id==id){
+    bottomSheetRef?.current?.hide();
+  };
+
+  const cancelSchedule = async (id: number) => {
+    VolumeScheduler.cancelSchedule(id)?.then(async (i: any) => {
+      const tempList = scheduleList?.map((j: any) => {
+        if (j?.id == id) {
           return {
             ...j,
-            enable:false
-          }
+            enable: false,
+          };
         }
 
-        return j
-      })
-      
-    await  AsyncStorage.setItem(
+        return j;
+      });
+
+      await AsyncStorage.setItem(
         'scheduleList',
         JSON?.stringify([...tempList]),
-      ); 
+      );
       setScheduleList([...tempList]);
+    });
+  };
 
-    
-    
-    })
+  const deleteSchedule = async (id: number) => {
+    VolumeScheduler.cancelSchedule(id)?.then(async (i: any) => {
+      const tempList = scheduleList?.filter((j: any) => j?.id != id);
 
-
-
-
-  }
-
-
-  const deleteSchedule = async(id:number)=>{
-    VolumeScheduler.cancelSchedule(id)?.then(async(i:any)=>{
-
-      const tempList =scheduleList?.filter((j:any)=>(j?.id==id))
-      
-    await  AsyncStorage.setItem(
+      await AsyncStorage.setItem(
         'scheduleList',
         JSON?.stringify([...tempList]),
-      ); 
+      );
       setScheduleList([...tempList]);
 
-    bottomSheetRef?.current?.hide()
-    
-    })
-  }
+      bottomSheetRef?.current?.hide();
+    });
+  };
 
-
-  const onItemPress =(item:any)=>{
+  const onItemPress = (item: any) => {
     setSelectedId(item?.id);
-    setAlarmVolume(item?.volume?.alarm)
-    setRingVolume(item?.volume?.ring)
-    setMediaVolume(item?.volume?.media)
-    setRepeat(!!item?.days)
-    setDays(item?.days)
+    setAlarmVolume(item?.volume?.alarm);
+    setRingVolume(item?.volume?.ring);
+    setMediaVolume(item?.volume?.media);
+    setRepeat(!!item?.days);
+    setDays(item?.days);
 
-    settime(new Date(new Date((new Date())?.setHours(item?.hour))?.setMinutes(item?.minute)))
-    bottomSheetRef?.current?.show()
-  }
-
+    settime(
+      new Date(
+        new Date(new Date()?.setHours(item?.hour))?.setMinutes(item?.minute),
+      ),
+    );
+    bottomSheetRef?.current?.show();
+  };
 
   return (
     <View style={styles.container}>
       <BottomSheet
-
-      onDismiss={()=>{
-        setDays([])
-        setSelectedId(null)
-      }}
+        onDismiss={() => {
+          setDays([]);
+          setSelectedId(null);
+        }}
         height={Dimensions.get('window').height * 0.9}
         ref={bottomSheetRef}>
         <View
@@ -331,14 +365,15 @@ console.log(scheduleList)
           <View style={styles.sliderContainer}>
             <Text>Media Volume</Text>
             <Slider
-            
-              style={{width: Dimensions.get('window').width * 0.95,marginTop:verticalScale(10)}}
+              style={{
+                width: Dimensions.get('window').width * 0.95,
+                marginTop: verticalScale(10),
+              }}
               value={mediaVolume}
               onValueChange={(val: number) => {
-                console.log("-----------",val)
-                setMediaVolume(Math.trunc(val ));
+                console.log('-----------', val);
+                setMediaVolume(Math.trunc(val));
               }}
-              
               step={1}
               minimumValue={0}
               maximumValue={100}
@@ -350,13 +385,15 @@ console.log(scheduleList)
           <View style={styles.sliderContainer}>
             <Text>Ring Volume</Text>
             <Slider
-              style={{width: Dimensions.get('window').width * 0.95,marginTop:verticalScale(10)}}
+              style={{
+                width: Dimensions.get('window').width * 0.95,
+                marginTop: verticalScale(10),
+              }}
               value={ringVolume}
               onValueChange={(val: number) => {
-                console.log("-----------",val)
-                setRingVolume(Math.trunc(val ));
+                console.log('-----------', val);
+                setRingVolume(Math.trunc(val));
               }}
-              
               step={1}
               minimumValue={0}
               maximumValue={100}
@@ -368,16 +405,18 @@ console.log(scheduleList)
           <View style={styles.sliderContainer}>
             <Text>Alarm Volume</Text>
             <Slider
-              style={{width: Dimensions.get('window').width * 0.95,marginTop:verticalScale(10)}}
+              style={{
+                width: Dimensions.get('window').width * 0.95,
+                marginTop: verticalScale(10),
+              }}
               value={alarmVolume}
               onMagicTap={() => {
                 console.log('tapped');
               }}
               onValueChange={(val: number) => {
-                console.log("-----------",val)
-                setAlarmVolume(Math.trunc(val ));
+                console.log('-----------', val);
+                setAlarmVolume(Math.trunc(val));
               }}
-              
               step={1}
               minimumValue={0}
               maximumValue={100}
@@ -403,7 +442,15 @@ console.log(scheduleList)
             }}
           />
           <View style={{flexDirection: 'row', gap: scale(10)}}>
-            <Button title="Save" radius="xl" onPress={()=>createSchedule()} />
+            <Button
+              title="Save"
+              radius="xl"
+              onPress={() =>
+                selectedId
+                  ? editSchedule(selectedId)
+                  : createSchedule()
+              }
+            />
             <Button
               type="outline"
               title="Cancel"
@@ -412,52 +459,53 @@ console.log(scheduleList)
             />
             <Button
               title="Delete"
-              color='red'
+              color="red"
               radius="xl"
-              onPress={() =>{
-                deleteSchedule(selectedId)
+              onPress={() => {
+                deleteSchedule(selectedId);
               }}
             />
           </View>
         </View>
       </BottomSheet>
       <View style={{marginTop: verticalScale(30)}}>
-          <Text fontSize="extraExtraLarge">Schedule Volume</Text>
-        </View>
-
-{scheduleList?.length<1 ?
-
-      <View style={styles.container}>
-       
-
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: verticalScale(20),
-          }}>
-          <AntDesign name="plus" size={moderateScale(100)} color="#bfbfbf" />
-          <Text>Click + to add new Schedule</Text>
-        </View>
+        <Text fontSize="extraExtraLarge">Schedule Volume</Text>
       </View>
-      :
-      <View style={[styles?.container,{paddingHorizontal:0}]}>
 
-<FlatList
-contentContainerStyle={{
-  marginTop:verticalScale(10),
-  paddingBottom:verticalScale(100),
-  gap:verticalScale(10)
-}}
-  data={scheduleList}
-  renderItem={({ item, index }: { item: any; index: number }) => (
-    <ScheduleItems createSchedule={createSchedule} onItemPress={onItemPress} cancelSchedule={cancelSchedule} item={item} index={index} />
-  )}
-/>
-      </View>
-}
-
+      {scheduleList?.length < 1 ? (
+        <View style={styles.container}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: verticalScale(20),
+            }}>
+            <AntDesign name="plus" size={moderateScale(100)} color="#bfbfbf" />
+            <Text>Click + to add new Schedule</Text>
+          </View>
+        </View>
+      ) : (
+        <View style={[styles?.container, {paddingHorizontal: 0}]}>
+          <FlatList
+            contentContainerStyle={{
+              marginTop: verticalScale(10),
+              paddingBottom: verticalScale(100),
+              gap: verticalScale(10),
+            }}
+            data={scheduleList}
+            renderItem={({item, index}: {item: any; index: number}) => (
+              <ScheduleItems
+                createSchedule={createSchedule}
+                onItemPress={onItemPress}
+                cancelSchedule={cancelSchedule}
+                item={item}
+                index={index}
+              />
+            )}
+          />
+        </View>
+      )}
 
       <Pressable
         onPress={() => bottomSheetRef?.current?.show()}
